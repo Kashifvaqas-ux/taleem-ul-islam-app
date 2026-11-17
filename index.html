@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#123b67">\n<link rel="manifest" href="manifest.webmanifest">
+<title>Taleem ul Islam Senior Secondary School</title>
+<style>
+:root{--navy:#123b67;--blue:#1d67b2;--gold:#e4b64f;--bg:#f3f6fa;--card:#fff;--ink:#17263b;--muted:#63738a;--line:#dce4ee;--red:#b42318;--green:#16845b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:none!important}
+header{background:linear-gradient(120deg,#123b67,#1d67b2);color:white;padding:20px max(18px,calc((100% - 1100px)/2));}
+.brand{display:flex;align-items:center;gap:13px}.crest{width:48px;height:48px;border:2px solid #f3d37d;border-radius:14px;display:grid;place-items:center;font-size:25px}.brand h1{font-size:clamp(19px,3vw,26px);line-height:1.15;margin:0}.brand p{margin:4px 0 0;color:#dbe9f7;font-size:13px}
+main{max-width:1100px;margin:24px auto;padding:0 16px 60px}.panel,.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 5px 18px #17365d0c}
+.login{max-width:430px;margin:8vh auto}.login h2{margin:0 0 6px}.muted{color:var(--muted)}label{display:grid;gap:6px;color:var(--muted);font-size:13px;font-weight:600}input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink);min-height:44px}textarea{min-height:85px;resize:vertical}.stack{display:grid;gap:12px}.btn{border:0;border-radius:10px;background:var(--blue);color:white;padding:11px 16px;font-weight:700;min-height:43px}.btn.secondary{background:#edf3fa;color:var(--navy);border:1px solid var(--line)}.btn.danger{background:#fff0ef;color:var(--red);border:1px solid #f4c7c3}.error{color:var(--red);font-size:13px;white-space:pre-wrap}.topline{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.welcome h2{margin:0}.welcome p{margin:4px 0;color:var(--muted)}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.stat b{font-size:25px;display:block;color:var(--navy)}.stat span{font-size:13px;color:var(--muted)}
+nav{display:flex;gap:8px;overflow:auto;padding:4px 0 13px;margin:14px 0}.navbtn{white-space:nowrap;border:1px solid var(--line);background:white;color:var(--ink);padding:9px 13px;border-radius:999px}.navbtn.active{background:var(--navy);border-color:var(--navy);color:white}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px}.formgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.wide{grid-column:1/-1}.sectiontitle{margin:0 0 12px;font-size:19px}.items{display:grid;gap:9px}.item{border:1px solid var(--line);border-radius:12px;padding:13px;display:flex;justify-content:space-between;gap:12px;background:#fff}.item h3{font-size:15px;margin:0 0 4px}.item p{white-space:pre-wrap;margin:5px 0;color:var(--muted);font-size:13px}.item small{color:var(--muted)}.actions{display:flex;gap:6px;align-items:flex-start}.actions button{padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:white;color:var(--ink)}.empty{padding:24px;text-align:center;border:1px dashed var(--line);border-radius:12px;color:var(--muted)}
+.badge{display:inline-block;padding:3px 8px;border-radius:99px;background:#edf3fa;color:var(--navy);font-size:11px;font-weight:700}.notice{background:#fff8e7;border:1px solid #f0dca8;border-radius:12px;padding:12px;font-size:13px;color:#644b12}.footer{font-size:12px;color:var(--muted);text-align:center;margin:22px 0}
+@media(max-width:760px){.layout{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}@media(max-width:480px){main{margin:14px auto}.panel,.card{padding:13px}.formgrid{grid-template-columns:1fr}.wide{grid-column:auto}.item{flex-direction:column}.actions{justify-content:flex-end}}
+</style>
+</head>
+<body>
+<header><div class="brand"><div class="crest">✦</div><div><h1>Taleem ul Islam Senior Secondary School</h1><p>Official School Portal · Students · Teachers · Administration</p></div></div></header>
+<main>
+<section id="loginView" class="panel login">
+<h2>School Portal Login</h2><p class="muted">Sign in using the account provided by your school.</p>
+<form id="loginForm" class="stack">
+<label>Email address<input id="email" type="email" autocomplete="username" required placeholder="name@example.com"></label>
+<label>Password<input id="password" type="password" autocomplete="current-password" required></label>
+<button class="btn" type="submit">Sign in</button><div id="loginError" class="error" role="alert"></div>
+</form>
+<p class="muted" style="font-size:12px">Student and staff accounts must be created or invited by an authorised school administrator.</p>
+</section>
+<section id="appView" class="hidden">
+<div class="topline welcome"><div><h2 id="welcomeTitle">School dashboard</h2><p id="roleLine"></p></div><button id="logoutBtn" class="btn secondary">Sign out</button></div>
+<div class="stats">
+<div class="card stat"><b id="statClasses">—</b><span>Today's classes</span></div>
+<div class="card stat"><b id="statHomework">—</b><span>Homework items</span></div>
+<div class="card stat"><b id="statEvents">—</b><span>Upcoming activities</span></div>
+<div class="card stat"><b id="statNotices">—</b><span>Notices</span></div>
+</div>
+<div class="notice">Use only school-approved accounts. Student records and attendance are private. Do not enter passwords or personal student information on a shared/public device.</div>
+<nav id="tabs">
+<button class="navbtn active" data-kind="Classes">Today's classes</button>
+<button class="navbtn" data-kind="Classwork">Classwork</button>
+<button class="navbtn" data-kind="Attendance">Attendance</button>
+<button class="navbtn" data-kind="Homework">Homework</button>
+<button class="navbtn" data-kind="Events">Events</button>
+<button class="navbtn" data-kind="Competitions">Competitions</button>
+<button class="navbtn" data-kind="Exams">Exams & results</button>
+<button class="navbtn" data-kind="Notices">Notices</button>
+<button class="navbtn" data-kind="Notes">Study notes</button>
+</nav>
+<div class="layout">
+<section class="panel">
+<div class="topline"><h2 id="listTitle" class="sectiontitle">Today's classes</h2><span id="count" class="badge">0 records</span></div>
+<div id="recordList" class="items"><div class="empty">Loading school information…</div></div>
+</section>
+<aside class="panel" id="editorPanel">
+<h2 id="formTitle" class="sectiontitle">Add school information</h2>
+<form id="recordForm" class="stack">
+<div class="formgrid">
+<label class="wide">Title / subject<input id="recordTitle" maxlength="120" required placeholder="e.g. Mathematics"></label>
+<label>Date<input id="recordDate" type="date" required></label>
+<label>Start time<input id="recordTime" type="time"></label>
+<label>Status<select id="recordStatus"><option>Scheduled</option><option>Present</option><option>Absent</option><option>Late</option><option>Pending</option><option>Submitted</option><option>Completed</option><option>Published</option></select></label>
+<label>Class / section<input id="classGroup" maxlength="60" placeholder="e.g. Class 9-A"></label>
+<label class="wide">Details<textarea id="recordDetails" maxlength="2000" placeholder="Instructions, chapter, room, venue or announcement…"></textarea></label>
+</div>
+<button id="saveBtn" class="btn" type="submit">Publish record</button>
+<button id="cancelEdit" class="btn secondary hidden" type="button">Cancel edit</button>
+<div id="formError" class="error" role="alert"></div>
+</form>
+<p class="muted" style="font-size:12px;margin-top:13px">Only authorised teachers and administrators can publish or edit school records. Students can view information shared with their class or account.</p>
+</aside>
+</div>
+<div class="footer">Taleem ul Islam Senior Secondary School · School portal starter</div>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/*
+  SETUP: Replace the two placeholders below with your Supabase project's public URL
+  and anon/publishable key. Never put a service_role/secret key in this file.
+*/
+const SUPABASE_URL = "https://dwnuaxljbnmweisvuwyp.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_RjMz-5BsVBTay6ty_n3_aw_UaUHf81d";
+const configured = SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("YOUR_") && !SUPABASE_ANON_KEY.includes("YOUR_");
+let db=null, currentUser=null, profile=null, currentKind="Classes", editingId=null, records=[];
+const $=id=>document.getElementById(id);
+const today=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-")};
+const escapeHtml=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const isStaff=()=>profile && ["teacher","admin"].includes(profile.role);
+const kinds=["Classes","Classwork","Attendance","Homework","Events","Competitions","Exams","Notices","Notes"];
+function setError(id,msg){$(id).textContent=msg||""}
+function dateLabel(d){return d?new Date(d+"T00:00:00").toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"}):""}
+function resetForm(){editingId=null;$("recordForm").reset();$("recordDate").value=today();$("saveBtn").textContent="Publish record";$("cancelEdit").classList.add("hidden");$("formTitle").textContent="Add school information"}
+function showLogin(){ $("loginView").classList.remove("hidden");$("appView").classList.add("hidden")}
+function showApp(){ $("loginView").classList.add("hidden");$("appView").classList.remove("hidden")}
+async function loadProfile(){
+ const {data,error}=await db.from("profiles").select("id,full_name,role,class_group").eq("id",currentUser.id).single();
+ if(error) throw error; profile=data;
+ $("welcomeTitle").textContent="Welcome, "+(profile.full_name||currentUser.email);
+ $("roleLine").textContent=(profile.role||"student").toUpperCase()+" · "+(profile.class_group||"School portal");
+ $("editorPanel").classList.toggle("hidden",!isStaff());
+}
+async function refresh(){
+ const {data,error}=await db.from("school_entries").select("*").order("entry_date",{ascending:true}).order("start_time",{ascending:true}).limit(250);
+ if(error) throw error; records=data||[]; render();
+}
+function visibleForTab(r){
+ if(r.entry_type!==currentKind)return false;
+ if(currentKind==="Classes") return r.entry_date===today();
+ return true;
+}
+function render(){
+ const list=records.filter(visibleForTab);
+ $("listTitle").textContent=currentKind==="Classes"?"Today's classes":currentKind==="Exams"?"Exams & results":currentKind;
+ $("count").textContent=list.length+" records";
+ $("recordList").innerHTML=list.length?list.map(r=>`<article class="item"><div><h3>${escapeHtml(r.title)}</h3><small>${escapeHtml(dateLabel(r.entry_date))}${r.start_time?" · "+escapeHtml(r.start_time.slice(0,5)):""} · ${escapeHtml(r.status||"")}</small>${r.class_group?`<p><b>Class:</b> ${escapeHtml(r.class_group)}</p>`:""}${r.details?`<p>${escapeHtml(r.details)}</p>`:""}</div>${isStaff()?`<div class="actions"><button data-edit="${r.id}">Edit</button><button data-delete="${r.id}">Delete</button></div>`:""}</article>`).join(""):`<div class="empty">No ${escapeHtml(currentKind.toLowerCase())} have been shared here yet.</div>`;
+ const count=(k)=>records.filter(r=>r.entry_type===k).length;
+ $("statClasses").textContent=count("Classes");
+ $("statHomework").textContent=count("Homework");
+ $("statEvents").textContent=records.filter(r=>["Events","Competitions"].includes(r.entry_type)&&r.entry_date>=today()).length;
+ $("statNotices").textContent=count("Notices");
+}
+async function startSession(session){
+ currentUser=session.user;
+ await loadProfile(); showApp(); await refresh();
+}
+$("loginForm").addEventListener("submit",async e=>{
+ e.preventDefault();setError("loginError","");
+ if(!configured){setError("loginError","The school portal has not been connected to its secure database yet. Ask the school administrator to complete the setup in README.md.");return}
+ const {data,error}=await db.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
+ if(error){setError("loginError","Sign-in failed. Check your school-issued login details or contact the school administrator.");return}
+ try{await startSession(data.session)}catch(err){await db.auth.signOut();setError("loginError","Your account profile is not ready. Please contact the school administrator.");}
+});
+$("logoutBtn").addEventListener("click",async()=>{await db.auth.signOut();currentUser=null;profile=null;showLogin()});
+$("tabs").addEventListener("click",e=>{const b=e.target.closest("[data-kind]");if(!b)return;currentKind=b.dataset.kind;document.querySelectorAll(".navbtn").forEach(x=>x.classList.toggle("active",x===b));resetForm();render()});
+$("recordForm").addEventListener("submit",async e=>{
+ e.preventDefault();setError("formError","");
+ if(!isStaff())return;
+ const payload={entry_type:currentKind,title:$("recordTitle").value.trim(),entry_date:$("recordDate").value,start_time:$("recordTime").value||null,status:$("recordStatus").value,class_group:$("classGroup").value.trim()||null,details:$("recordDetails").value.trim()||null,scope:$("classGroup").value.trim()?"class":"school",created_by:currentUser.id};
+ try{
+  let result;
+  if(editingId) result=await db.from("school_entries").update(payload).eq("id",editingId);
+  else result=await db.from("school_entries").insert(payload);
+  if(result.error)throw result.error;resetForm();await refresh();
+ }catch(err){setError("formError","Could not save this record. Check your connection and account permissions, then contact the administrator if it continues.")}
+});
+$("cancelEdit").addEventListener("click",resetForm);
+$("recordList").addEventListener("click",async e=>{
+ const edit=e.target.closest("[data-edit]"),del=e.target.closest("[data-delete]");
+ if(edit){const r=records.find(x=>x.id===edit.dataset.edit);if(!r)return;editingId=r.id;$("recordTitle").value=r.title;$("recordDate").value=r.entry_date;$("recordTime").value=r.start_time||"";$("recordStatus").value=r.status||"Scheduled";$("classGroup").value=r.class_group||"";$("recordDetails").value=r.details||"";$("saveBtn").textContent="Save changes";$("cancelEdit").classList.remove("hidden");$("formTitle").textContent="Edit school information";$("editorPanel").scrollIntoView({behavior:"smooth"});}
+ if(del&&confirm("Delete this school record?")){const {error}=await db.from("school_entries").delete().eq("id",del.dataset.delete);if(error)alert("Could not delete. Check your account permissions.");else await refresh()}
+});
+$("recordDate").value=today();
+if(configured){
+ db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+ db.auth.getSession().then(async({data})=>{if(data.session){try{await startSession(data.session)}catch(e){showLogin()}}});
+ db.auth.onAuthStateChange((_event,session)=>{if(!session){currentUser=null;profile=null;showLogin()}});
+}
+</script>
+</body></html>

@@ -1,0 +1,506 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Task Manager</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap">
+<style>
+/* Layout: one centered column. Header + stats, add/edit form, filters, task list, pop-ups (toast + reminder dialog). */
+:root {
+  --bg: #f3f6fb;
+  --surface: #ffffff;
+  --fg: #16202e;
+  --muted: #5d6b80;
+  --line: #dce3ee;
+  --accent: #2b6cf6;
+  --accent-fg: #ffffff;
+  --done: #1f9d6b;
+  --warn: #c2410c;
+  --school: #2b6cf6;
+  --work: #7c3aed;
+  --personal: #0f8b8d;
+  --high: #c2410c;
+  --med: #a16207;
+  --low: #5d6b80;
+  --shadow: 0 8px 24px rgba(15, 30, 60, .18);
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1623; --surface: #182234; --fg: #e8eef8; --muted: #9aa8bd; --line: #2a3750;
+    --accent: #6b9bff; --accent-fg: #0b1220; --done: #4cc995; --warn: #fb923c;
+    --school: #7aa5ff; --work: #b794f6; --personal: #4fd1d3;
+    --high: #fb923c; --med: #facc15; --low: #9aa8bd; --shadow: 0 8px 24px rgba(0, 0, 0, .5); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1623; --surface: #182234; --fg: #e8eef8; --muted: #9aa8bd; --line: #2a3750;
+  --accent: #6b9bff; --accent-fg: #0b1220; --done: #4cc995; --warn: #fb923c;
+  --school: #7aa5ff; --work: #b794f6; --personal: #4fd1d3;
+  --high: #fb923c; --med: #facc15; --low: #9aa8bd; --shadow: 0 8px 24px rgba(0, 0, 0, .5); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 120px;
+}
+.app { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+button { font: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+header { display: flex; flex-direction: column; gap: 14px; }
+.top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+h1 { font-family: var(--font-display); font-size: 2rem; line-height: 1.1; margin: 0; letter-spacing: -0.01em; }
+.sub { color: var(--muted); margin: 4px 0 0; }
+.icons { display: flex; gap: 6px; flex: 0 0 auto; }
+.iconbtn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 10px; min-height: 44px; min-width: 44px; padding: 0 12px; justify-content: center; font-size: .875rem; font-weight: 500; }
+.iconbtn svg { width: 20px; height: 20px; flex: 0 0 auto; }
+.iconbtn[aria-pressed="true"] { color: var(--done); border-color: var(--done); }
+.iconbtn .lbl { display: none; }
+@media (min-width: 480px) { .iconbtn .lbl { display: inline; } }
+
+.progress { display: flex; flex-direction: column; gap: 8px; }
+.bar { height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.bar > span { display: block; height: 100%; width: 0; background: var(--done); border-radius: 99px; transition: width .3s; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: .875rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pill { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 2px 10px; font-weight: 500; }
+.pill.late { color: var(--warn); border-color: var(--warn); }
+
+form.add { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.add-row { display: flex; gap: 8px; flex-wrap: wrap; }
+input[type=text], input[type=search], input[type=date], input[type=time], select {
+  font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 44px; min-width: 0;
+}
+input[type=text] { flex: 1 1 200px; }
+select, input[type=date], input[type=time] { flex: 1 1 120px; }
+.btn-add { background: var(--accent); color: var(--accent-fg); border: 0; border-radius: 10px; font-weight: 600; padding: 10px 20px; min-height: 44px; flex: 0 0 auto; }
+.btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; min-height: 44px; flex: 0 0 auto; }
+.field-label { font-size: .75rem; color: var(--muted); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 120px; min-width: 0; }
+.field select, .field input { width: 100%; }
+
+.filters { display: flex; flex-direction: column; gap: 10px; }
+.tabs { display: flex; gap: 6px; background: var(--line); padding: 4px; border-radius: 12px; }
+.tab { flex: 1; border: 0; background: transparent; color: var(--muted); padding: 8px 6px; border-radius: 9px; font-weight: 500; min-height: 40px; }
+.tab[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.find { display: flex; gap: 8px; flex-wrap: wrap; }
+.find input { flex: 2 1 160px; }
+.find select { flex: 1 1 130px; }
+
+ul.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+li.task { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 8px 10px 12px; display: flex; align-items: center; gap: 12px; }
+li.task.editing { border-color: var(--accent); }
+.check { flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--muted); background: transparent; color: transparent; display: grid; place-items: center; padding: 0; }
+.check svg { width: 16px; height: 16px; }
+li.done .check { background: var(--done); border-color: var(--done); color: #fff; }
+.body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.title { overflow-wrap: anywhere; }
+li.done .title { text-decoration: line-through; color: var(--muted); }
+.meta { display: flex; gap: 4px 12px; flex-wrap: wrap; font-size: .8125rem; color: var(--muted); align-items: center; }
+.tag { font-weight: 600; }
+.tag.School { color: var(--school); } .tag.Work { color: var(--work); } .tag.Personal { color: var(--personal); }
+.pri.High { color: var(--high); font-weight: 600; } .pri.Medium { color: var(--med); } .pri.Low { color: var(--low); }
+.due.late { color: var(--warn); font-weight: 600; }
+.act { border: 0; background: transparent; color: var(--muted); width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; flex: 0 0 auto; }
+.act:hover { color: var(--fg); background: var(--bg); }
+.act.del:hover { color: var(--warn); }
+.act svg { width: 18px; height: 18px; }
+.empty { text-align: center; color: var(--muted); padding: 32px 12px; border: 2px dashed var(--line); border-radius: 12px; }
+.foot { display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; font-size: .875rem; color: var(--muted); }
+.link { background: none; border: 0; color: var(--accent); font-weight: 500; padding: 8px 0; text-decoration: underline; }
+
+/* Toasts */
+#toasts { position: fixed; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; z-index: 50; }
+.toast { pointer-events: auto; width: 100%; max-width: 440px; background: var(--fg); color: var(--bg); border-radius: 12px; padding: 12px 14px; box-shadow: var(--shadow); display: flex; gap: 12px; align-items: center; animation: pop .25s ease-out; }
+.toast .msg { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.toast .msg b { display: block; }
+.toast button { background: transparent; border: 1px solid currentColor; color: inherit; border-radius: 8px; padding: 6px 12px; min-height: 36px; font-weight: 600; }
+.toast .x { border: 0; padding: 6px; font-size: 1.1rem; line-height: 1; min-height: 36px; min-width: 36px; }
+@keyframes pop { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Reminder dialog */
+#modal { position: fixed; inset: 0; background: rgba(8, 14, 26, .55); display: grid; place-items: center; padding: 16px; z-index: 60; }
+.dialog { background: var(--surface); color: var(--fg); border-radius: 16px; max-width: 440px; width: 100%; padding: 20px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 12px; max-height: 80%; overflow: auto; animation: pop .25s ease-out; }
+.dialog h2 { font-family: var(--font-display); font-size: 1.375rem; margin: 0; }
+.dialog ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.dialog li { background: var(--bg); border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; }
+.dialog li small { color: var(--muted); }
+.dialog li small.late { color: var(--warn); font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .bar > span { transition: none; } .toast, .dialog { animation: none; } }
+</style>
+<style>
+/* School Hub */
+.schoolhub{border:1px solid var(--line);background:var(--surface);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow)}
+.schoolhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}.schoolhead h2{margin:0;font:700 1.45rem var(--font-display)}
+.schoolstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.schoolstat{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px}.schoolstat b{display:block;font-size:1.3rem}.schoolstat small{color:var(--muted)}
+.schooltabs{display:flex;gap:7px;overflow-x:auto;padding:2px 0 6px}.schooltab{white-space:nowrap;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:999px;padding:8px 12px}.schooltab[aria-pressed=true]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.schoolform{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.schoolform label{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--muted)}.schoolform input,.schoolform select,.schoolform textarea{width:100%;min-width:0;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);color:var(--fg);font:inherit}.schoolform textarea{min-height:68px;resize:vertical}.schoolform .wide{grid-column:1/-1}.schoolactions{display:flex;gap:8px;flex-wrap:wrap}.schoolactions button{border:0;border-radius:10px;padding:10px 15px;background:var(--accent);color:var(--accent-fg);font-weight:600}.schoolactions .secondary{background:var(--bg);border:1px solid var(--line);color:var(--fg)}
+.schoollist{display:grid;gap:8px}.schoolitem{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:11px;background:var(--bg)}.schoolitem strong{display:block}.schoolitem p{margin:3px 0;color:var(--muted);font-size:.9rem;white-space:pre-wrap}.schoolitem small{color:var(--muted)}.schoolitem button{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:6px 9px}.schoolempty{color:var(--muted);text-align:center;padding:16px;border:1px dashed var(--line);border-radius:12px}.schoolhint{font-size:.82rem;color:var(--muted);margin:0}
+@media(max-width:480px){.schoolstats{grid-template-columns:repeat(2,minmax(0,1fr))}.schoolform{grid-template-columns:1fr}.schoolform .wide{grid-column:auto}.schoolhub{padding:12px}}
+</style>
+
+<div class="app">
+  <header>
+    <div class="top">
+      <div>
+        <h1>Task Manager</h1>
+        <p class="sub" id="today"></p>
+      </div>
+      <div class="icons">
+        <button class="iconbtn" id="bell" type="button" aria-pressed="false" aria-label="Turn on alerts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 004 0"/></svg>
+          <span class="lbl" id="belllbl">Alerts</span>
+        </button>
+        <button class="iconbtn" id="theme" type="button" aria-label="Switch light or dark mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="progress">
+      <div class="bar" role="progressbar" aria-label="Tasks completed" aria-valuemin="0" aria-valuemax="100" id="bar"><span id="barfill"></span></div>
+      <div class="stats" id="stats"></div>
+    </div>
+  </header>
+
+<section class="schoolhub" aria-labelledby="schooltitle">
+  <div class="schoolhead"><div><h2 id="schooltitle">🎓 School Hub</h2><p class="sub">Your timetable, attendance, homework and school activities in one place.</p></div><button class="btn-ghost" type="button" id="schoolToday">Today</button></div>
+  <div class="schoolstats" id="schoolStats"></div>
+  <nav class="schooltabs" id="schoolTabs" aria-label="School sections">
+    <button class="schooltab" data-kind="Classes" aria-pressed="true">Today's classes</button><button class="schooltab" data-kind="Classwork" aria-pressed="false">Classwork</button><button class="schooltab" data-kind="Attendance" aria-pressed="false">Attendance</button><button class="schooltab" data-kind="Homework" aria-pressed="false">Homework</button><button class="schooltab" data-kind="Events" aria-pressed="false">Events</button><button class="schooltab" data-kind="Competitions" aria-pressed="false">Competitions</button><button class="schooltab" data-kind="Exams" aria-pressed="false">Exams</button><button class="schooltab" data-kind="Notes" aria-pressed="false">Notes</button>
+  </nav>
+  <form class="schoolform" id="schoolForm">
+    <label>Title / subject<input id="schoolTitle" maxlength="100" placeholder="e.g. Mathematics" required></label>
+    <label>Date<input id="schoolDate" type="date" required></label>
+    <label>Start time<input id="schoolTime" type="time"></label>
+    <label id="schoolStatusWrap">Status<select id="schoolStatus"><option value="Planned">Planned</option><option value="Done">Done</option><option value="Pending">Pending</option><option value="Present">Present</option><option value="Absent">Absent</option><option value="Late">Late</option><option value="Submitted">Submitted</option></select></label>
+    <label class="wide">Details / classwork / location<textarea id="schoolDetails" maxlength="1000" placeholder="Add chapter, homework instructions, venue, teacher or other details..."></textarea></label>
+    <div class="schoolactions wide"><button type="submit" id="schoolSave">Add to School Hub</button><button type="button" class="secondary" id="schoolCancel" hidden>Cancel edit</button></div>
+  </form>
+  <p class="schoolhint" id="schoolHint">Add your weekly lessons here with their dates and times. Entries are saved on this device.</p>
+  <div class="schoollist" id="schoolList" aria-live="polite"></div>
+</section>
+
+  <form class="add" id="addform">
+    <div class="add-row">
+      <input type="text" id="newtitle" placeholder="Add a new task" aria-label="Task name" maxlength="120" autocomplete="off">
+      <button class="btn-add" type="submit" id="submitbtn">Add</button>
+      <button class="btn-ghost" type="button" id="cancelbtn" hidden>Cancel</button>
+    </div>
+    <div class="add-row">
+      <label class="field"><span class="field-label">Category</span>
+        <select id="newcat"><option>School</option><option>Work</option><option>Personal</option></select></label>
+      <label class="field"><span class="field-label">Priority</span>
+        <select id="newpri"><option>Medium</option><option>High</option><option>Low</option></select></label>
+      <label class="field"><span class="field-label">Due date</span>
+        <input type="date" id="newdue"></label>
+      <label class="field"><span class="field-label">Time (for alert)</span>
+        <input type="time" id="newtime"></label>
+    </div>
+  </form>
+
+  <div class="filters">
+    <div class="tabs" role="group" aria-label="Show tasks">
+      <button class="tab" data-f="all" aria-pressed="true">All</button>
+      <button class="tab" data-f="todo" aria-pressed="false">To do</button>
+      <button class="tab" data-f="done" aria-pressed="false">Done</button>
+    </div>
+    <div class="find">
+      <input type="search" id="search" placeholder="Search tasks" aria-label="Search tasks" autocomplete="off">
+      <select id="catfilter" aria-label="Filter by category">
+        <option value="">All categories</option><option>School</option><option>Work</option><option>Personal</option>
+      </select>
+    </div>
+  </div>
+
+  <ul class="list" id="list"></ul>
+
+  <div class="foot">
+    <span>Your tasks are saved in this browser.</span>
+    <button class="link" id="clear" type="button">Clear completed</button>
+  </div>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+<div id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modaltitle">
+  <div class="dialog">
+    <h2 id="modaltitle">Heads up</h2>
+    <p class="sub" id="modalsub"></p>
+    <ul id="modallist"></ul>
+    <button class="btn-add" id="modalok" type="button">Got it</button>
+  </div>
+</div>
+
+<script>
+(function(){
+ const KEY='task-manager-school-hub-v1', $=id=>document.getElementById(id);
+ let records=[];try{records=JSON.parse(localStorage.getItem(KEY)||'[]');if(!Array.isArray(records))records=[];}catch(e){records=[];}
+ let kind='Classes', editId=null, todayOnly=true;
+ const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+ const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(records));}catch(e){alert('Could not save. Device storage may be full.');}};
+ const dateText=d=>d?new Date(d+'T00:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'}):'';
+ function stats(){const t=today(),home=records.filter(x=>x.kind==='Homework'&&x.status!=='Done'&&x.status!=='Submitted').length,events=records.filter(x=>['Events','Competitions'].includes(x.kind)&&x.date>=t).length,classes=records.filter(x=>x.kind==='Classes'&&x.date===t).length,att=records.filter(x=>x.kind==='Attendance'&&x.date===t&&x.status==='Present').length;
+ $('schoolStats').innerHTML=[['Classes today',classes],['Present today',att],['Homework left',home],['Upcoming activities',events]].map(x=>'<div class="schoolstat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>').join('');}
+ function render(){stats();document.querySelectorAll('.schooltab').forEach(b=>b.setAttribute('aria-pressed',b.dataset.kind===kind));
+ const list=records.filter(x=>x.kind===kind&&(!todayOnly||kind!=='Classes'||x.date===today())).sort((a,b)=>(a.date||'').localeCompare(b.date||'')||(a.time||'').localeCompare(b.time||''));
+ $('schoolHint').textContent=kind==='Classes'?'Add each lesson with its date and start time. Today’s lessons appear here.':kind==='Attendance'?'Add one attendance entry for each subject and date; choose Present, Absent or Late.':kind==='Homework'?'Track homework, due dates and whether you have submitted it.':kind==='Classwork'?'Record what was taught or completed in class.':kind==='Events'?'Keep school trips, assemblies, holidays and other events here.':kind==='Competitions'?'Track competitions, registrations, venues and results.':kind==='Exams'?'Plan exam dates, subjects and revision notes.':'Save useful school notes and reminders here.';
+ $('schoolList').innerHTML=list.length?list.map(x=>'<article class="schoolitem"><div><strong>'+esc(x.title)+'</strong><small>'+esc(dateText(x.date))+(x.time?' · '+esc(x.time):'')+' · '+esc(x.status)+'</small>'+(x.details?'<p>'+esc(x.details)+'</p>':'')+'</div><div class="schoolactions"><button type="button" data-edit="'+x.id+'" aria-label="Edit '+esc(x.title)+'">Edit</button><button type="button" data-del="'+x.id+'" aria-label="Delete '+esc(x.title)+'">Delete</button></div></article>').join(''):'<div class="schoolempty">Nothing here yet. Add your first '+esc(kind.toLowerCase())+' above.</div>';
+ }
+ $('schoolTabs').addEventListener('click',e=>{const b=e.target.closest('[data-kind]');if(!b)return;kind=b.dataset.kind;todayOnly=kind==='Classes';reset();render();});
+ $('schoolToday').addEventListener('click',()=>{todayOnly=!todayOnly;$('schoolToday').textContent=todayOnly?'Show all dates':'Show today';render();});
+ function reset(){editId=null;$('schoolForm').reset();$('schoolDate').value=today();$('schoolSave').textContent='Add to School Hub';$('schoolCancel').hidden=true;}
+ $('schoolForm').addEventListener('submit',e=>{e.preventDefault();const item={id:editId||Date.now()+Math.random(),kind,title:$('schoolTitle').value.trim(),date:$('schoolDate').value,time:$('schoolTime').value,status:$('schoolStatus').value,details:$('schoolDetails').value.trim()};if(!item.title||!item.date)return;if(editId){records=records.map(x=>x.id===editId?item:x);}else records.push(item);save();reset();render();});
+ $('schoolCancel').addEventListener('click',reset);
+ $('schoolList').addEventListener('click',e=>{const del=e.target.closest('[data-del]'),ed=e.target.closest('[data-edit]');if(del){records=records.filter(x=>String(x.id)!==del.dataset.del);save();render();}if(ed){const x=records.find(x=>String(x.id)===ed.dataset.edit);if(!x)return;kind=x.kind;render();editId=x.id;$('schoolTitle').value=x.title;$('schoolDate').value=x.date;$('schoolTime').value=x.time;$('schoolStatus').value=x.status;$('schoolDetails').value=x.details;$('schoolSave').textContent='Save changes';$('schoolCancel').hidden=false;$('schoolTitle').focus();}});
+ $('schoolDate').value=today();render();
+})();
+</script>
+
+<script>
+(function () {
+  var KEY = "task-manager-v1", THEME_KEY = "task-manager-theme", SEEN_KEY = "task-manager-seen-day";
+  var tasks = [], filter = "all", editingId = null;
+  var $ = function (id) { return document.getElementById(id); };
+
+  function iso(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function daysFromNow(n) { var d = new Date(); d.setDate(d.getDate() + n); return iso(d); }
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  /* ---------- data ---------- */
+  var raw = lsGet(KEY), parsed = null;
+  try { parsed = raw ? JSON.parse(raw) : null; } catch (e) {}
+  tasks = Array.isArray(parsed) ? parsed : [
+    { id: 1, title: "Finish science project poster (example)", cat: "School", pri: "High", due: daysFromNow(0), time: "", done: false },
+    { id: 2, title: "Read chapter 5 for English (example)", cat: "School", pri: "Medium", due: daysFromNow(1), time: "", done: false },
+    { id: 3, title: "Send weekly report to manager (example)", cat: "Work", pri: "Medium", due: daysFromNow(3), time: "", done: false },
+    { id: 4, title: "Pack gym bag (example)", cat: "Personal", pri: "Low", due: "", time: "", done: true }
+  ];
+  tasks.forEach(function (t) { t.pri = t.pri || "Medium"; t.time = t.time || ""; });
+  function save() { lsSet(KEY, JSON.stringify(tasks)); }
+
+  function dueTs(t) {
+    if (!t.due) return null;
+    var p = t.due.split("-"), tm = (t.time || "23:59").split(":");
+    return new Date(+p[0], +p[1] - 1, +p[2], +tm[0], +tm[1]).getTime();
+  }
+  function isOverdue(t) { var ts = dueTs(t); return !t.done && ts !== null && ts < Date.now(); }
+  function isToday(t) { return !t.done && t.due === iso(new Date()); }
+  function fmtTime(s) {
+    var p = s.split(":"); return new Date(2000, 0, 1, +p[0], +p[1]).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+  function fmtDue(t) {
+    if (!t.due) return null;
+    var today = iso(new Date()), p = t.due.split("-"), d = new Date(+p[0], +p[1] - 1, +p[2]);
+    var label = t.due === today ? "today" : t.due === daysFromNow(1) ? "tomorrow" : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    var time = t.time ? " at " + fmtTime(t.time) : "";
+    return isOverdue(t) ? "Overdue: " + label + time : "Due " + label + time;
+  }
+
+  /* ---------- toasts ---------- */
+  function toast(msg, opts) {
+    opts = opts || {};
+    var el = document.createElement("div"); el.className = "toast";
+    el.innerHTML = '<div class="msg">' + (opts.title ? "<b>" + esc(opts.title) + "</b>" : "") + esc(msg) + "</div>";
+    function close() { if (el.parentNode) el.parentNode.removeChild(el); }
+    if (opts.action) {
+      var a = document.createElement("button"); a.type = "button"; a.textContent = opts.action.label;
+      a.onclick = function () { opts.action.fn(); close(); }; el.appendChild(a);
+    }
+    var x = document.createElement("button"); x.type = "button"; x.className = "x"; x.setAttribute("aria-label", "Dismiss"); x.textContent = "×";
+    x.onclick = close; el.appendChild(x);
+    $("toasts").appendChild(el);
+    setTimeout(close, opts.ms || 5000);
+  }
+
+  /* ---------- undo ---------- */
+  function withUndo(message, change) {
+    var before = JSON.stringify(tasks);
+    change(); save(); render();
+    toast(message, { action: { label: "Undo", fn: function () { tasks = JSON.parse(before); save(); render(); } }, ms: 6000 });
+  }
+
+  /* ---------- alerts ---------- */
+  function notifSupported() { return typeof window.Notification !== "undefined"; }
+  function notifOn() { try { return notifSupported() && Notification.permission === "granted"; } catch (e) { return false; } }
+  function updateBell() {
+    var on = notifOn();
+    $("bell").setAttribute("aria-pressed", on);
+    $("bell").setAttribute("aria-label", on ? "Browser alerts are on" : "Turn on browser alerts");
+    $("belllbl").textContent = on ? "Alerts on" : "Turn on alerts";
+  }
+  function browserNotify(title, body) {
+    if (!notifOn()) return;
+    try { new Notification(title, { body: body }); } catch (e) {}
+  }
+  $("bell").addEventListener("click", function () {
+    if (notifOn()) { toast("Browser alerts are on. Keep this page open to get reminders.", { title: "Alerts on" }); return; }
+    if (!notifSupported()) { toast("This browser can't show alerts here. Pop-ups inside the page still work.", { title: "Alerts unavailable" }); return; }
+    try {
+      var r = Notification.requestPermission(function () {});
+      Promise.resolve(r).then(function (p) {
+        updateBell();
+        toast(p === "granted" ? "You will get an alert when a task with a time is due." : "Alerts are blocked. You can turn them on in your browser settings.", { title: p === "granted" ? "Alerts on" : "Alerts off" });
+      });
+    } catch (e) { toast("This browser can't show alerts here. Pop-ups inside the page still work.", { title: "Alerts unavailable" }); }
+  });
+
+  function checkReminders() {
+    var now = Date.now();
+    tasks.forEach(function (t) {
+      if (t.done || !t.time || t.alerted) return;
+      var ts = dueTs(t);
+      if (ts !== null && ts <= now && now - ts < 6 * 3600 * 1000) {
+        t.alerted = true; save();
+        toast(t.title, { title: "Task due now", ms: 12000 });
+        browserNotify("Task due now", t.title);
+        render();
+      }
+    });
+  }
+
+  function showModal() {
+    var due = tasks.filter(function (t) { return isOverdue(t) || isToday(t); });
+    if (!due.length) return;
+    var day = iso(new Date());
+    if (lsGet(SEEN_KEY) === day) return;
+    lsSet(SEEN_KEY, day);
+    due.forEach(function (t) { if (t.time) t.alerted = true; }); save();
+    $("modalsub").textContent = due.length === 1 ? "1 task needs your attention." : due.length + " tasks need your attention.";
+    $("modallist").innerHTML = due.map(function (t) {
+      return "<li><span>" + esc(t.title) + '</span><small class="' + (isOverdue(t) ? "late" : "") + '">' + esc(fmtDue(t)) + "</small></li>";
+    }).join("");
+    $("modal").hidden = false; $("modalok").focus();
+  }
+  function closeModal() { $("modal").hidden = true; }
+  $("modalok").addEventListener("click", closeModal);
+  $("modal").addEventListener("click", function (e) { if (e.target === $("modal")) closeModal(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { if (!$("modal").hidden) closeModal(); else if (editingId) stopEdit(); } });
+
+  /* ---------- theme ---------- */
+  function applyTheme(t) { if (t) document.documentElement.setAttribute("data-theme", t); }
+  applyTheme(lsGet(THEME_KEY));
+  $("theme").addEventListener("click", function () {
+    var cur = document.documentElement.getAttribute("data-theme");
+    if (!cur) cur = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    var next = cur === "dark" ? "light" : "dark";
+    applyTheme(next); lsSet(THEME_KEY, next);
+  });
+
+  /* ---------- render ---------- */
+  var CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  var TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3"/></svg>';
+  var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg>';
+  var PRI = { High: 0, Medium: 1, Low: 2 };
+
+  function render() {
+    var total = tasks.length, done = tasks.filter(function (t) { return t.done; }).length;
+    var pct = total ? Math.round(done / total * 100) : 0;
+    $("barfill").style.width = pct + "%";
+    $("bar").setAttribute("aria-valuenow", pct);
+    var late = tasks.filter(isOverdue).length, today = tasks.filter(isToday).length;
+    $("stats").innerHTML = '<span class="pill">' + (total ? done + " of " + total + " done" : "No tasks yet") + "</span>" +
+      (today ? '<span class="pill">' + today + " due today</span>" : "") +
+      (late ? '<span class="pill late">' + late + " overdue</span>" : "");
+
+    var q = $("search").value.trim().toLowerCase(), cf = $("catfilter").value;
+    var shown = tasks.filter(function (t) {
+      return (filter === "all" || (filter === "done" ? t.done : !t.done)) &&
+        (!cf || t.cat === cf) && (!q || t.title.toLowerCase().indexOf(q) > -1);
+    });
+    shown.sort(function (a, b) {
+      if (a.done !== b.done) return a.done ? 1 : -1;
+      var x = dueTs(a), y = dueTs(b);
+      if (x !== null && y !== null && x !== y) return x - y;
+      if (x !== null && y === null) return -1;
+      if (x === null && y !== null) return 1;
+      if (PRI[a.pri] !== PRI[b.pri]) return PRI[a.pri] - PRI[b.pri];
+      return a.id - b.id;
+    });
+
+    var list = $("list");
+    if (!shown.length) {
+      var msg = (q || cf) ? "No tasks match your search."
+        : filter === "done" ? "Nothing finished yet. Check off a task to see it here."
+        : total ? "All caught up. Nice work!" : "Add your first task above.";
+      list.innerHTML = '<li class="empty">' + msg + "</li>";
+    } else {
+      list.innerHTML = shown.map(function (t) {
+        var due = fmtDue(t);
+        return '<li class="task' + (t.done ? " done" : "") + (t.id === editingId ? " editing" : "") + '" data-id="' + t.id + '">' +
+          '<button class="check" aria-label="' + (t.done ? "Mark as not done: " : "Mark as done: ") + esc(t.title) + '" aria-pressed="' + t.done + '">' + CHECK + "</button>" +
+          '<div class="body"><span class="title">' + esc(t.title) + "</span>" +
+          '<div class="meta"><span class="tag ' + t.cat + '">' + t.cat + "</span>" +
+          '<span class="pri ' + t.pri + '">' + t.pri + " priority</span>" +
+          (due ? '<span class="due' + (isOverdue(t) ? " late" : "") + '">' + esc(due) + "</span>" : "") + "</div></div>" +
+          '<button class="act edit" aria-label="Edit task: ' + esc(t.title) + '">' + PEN + "</button>" +
+          '<button class="act del" aria-label="Delete task: ' + esc(t.title) + '">' + TRASH + "</button></li>";
+      }).join("");
+    }
+    $("clear").hidden = !done;
+  }
+
+  /* ---------- add / edit ---------- */
+  function stopEdit() {
+    editingId = null; $("addform").reset(); $("submitbtn").textContent = "Add"; $("cancelbtn").hidden = true; render();
+  }
+  $("cancelbtn").addEventListener("click", stopEdit);
+
+  $("addform").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var title = $("newtitle").value.trim();
+    if (!title) { toast("Type a task name first.", { title: "Nothing to add" }); $("newtitle").focus(); return; }
+    var due = $("newdue").value, time = due ? $("newtime").value : "";
+    if (editingId) {
+      tasks.forEach(function (t) {
+        if (t.id === editingId) { t.title = title; t.cat = $("newcat").value; t.pri = $("newpri").value; t.due = due; t.time = time; t.alerted = false; }
+      });
+      save(); stopEdit(); toast("Task updated.");
+    } else {
+      tasks.push({ id: Date.now(), title: title, cat: $("newcat").value, pri: $("newpri").value, due: due, time: time, done: false });
+      $("addform").reset(); save(); render(); toast("Task added.");
+    }
+    $("newtitle").focus();
+  });
+
+  $("list").addEventListener("click", function (e) {
+    var li = e.target.closest("li.task"); if (!li) return;
+    var id = +li.getAttribute("data-id"), t = tasks.filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    if (e.target.closest(".check")) {
+      t.done = !t.done; save(); render();
+      if (t.done && tasks.length && tasks.every(function (x) { return x.done; })) toast("Every task is done. Great job!", { title: "All done" });
+    } else if (e.target.closest(".del")) {
+      if (editingId === id) stopEdit();
+      withUndo("Task deleted.", function () { tasks = tasks.filter(function (x) { return x.id !== id; }); });
+    } else if (e.target.closest(".edit")) {
+      editingId = id;
+      $("newtitle").value = t.title; $("newcat").value = t.cat; $("newpri").value = t.pri; $("newdue").value = t.due; $("newtime").value = t.time;
+      $("submitbtn").textContent = "Save"; $("cancelbtn").hidden = false; render();
+      $("newtitle").focus(); window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  });
+
+  document.querySelectorAll(".tab").forEach(function (b) {
+    b.addEventListener("click", function () {
+      filter = b.getAttribute("data-f");
+      document.querySelectorAll(".tab").forEach(function (x) { x.setAttribute("aria-pressed", x === b); });
+      render();
+    });
+  });
+  $("search").addEventListener("input", render);
+  $("catfilter").addEventListener("change", render);
+  $("clear").addEventListener("click", function () {
+    withUndo("Finished tasks cleared.", function () { tasks = tasks.filter(function (t) { return !t.done; }); });
+  });
+
+  /* ---------- start ---------- */
+  $("today").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  updateBell(); render(); showModal(); checkReminders();
+  setInterval(function () { checkReminders(); render(); }, 30000);
+})();
+</script>
+
+</body></html>
